@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MigraShop — Migração WooCommerce → PrestaShop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg:      #080b10;
+  --bg1:     #0e1219;
+  --bg2:     #141a24;
+  --bg3:     #1c2535;
+  --border:  #1e2d45;
+  --t0:      #eef2ff;
+  --t1:      #8fa0c0;
+  --t2:      #4a5a78;
+  --accent:  #3b82f6;
+  --accent2: #6366f1;
+  --green:   #22d3a5;
+  --amber:   #f59e0b;
+  --red:     #ef4444;
+  --mono:    'JetBrains Mono', monospace;
+  --display: 'Bricolage Grotesque', sans-serif;
+  --body:    'Plus Jakarta Sans', sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+body { font-family: var(--body); background: var(--bg); color: var(--t0); min-height: 100vh; overflow-x: hidden; }
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 40px; height: 60px;
+  background: rgba(8,11,16,.85); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.logo { font-family: var(--display); font-size: 1.2rem; color: var(--t0); letter-spacing: -.02em; }
+.logo span { color: var(--accent); }
+.nav-links { display: flex; gap: 28px; font-size: .88rem; color: var(--t1); }
+.nav-links a { color: inherit; text-decoration: none; transition: color .2s; }
+.nav-links a:hover { color: var(--t0); }
+.btn-nav { background: var(--accent); color: #fff; border: none; padding: 8px 20px; border-radius: 6px; font-family: var(--body); font-size: .88rem; font-weight: 600; cursor: pointer; transition: opacity .2s; }
+.btn-nav:hover { opacity: .85; }
+
+/* ── HERO ── */
+.hero {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  text-align: center; padding: 100px 32px 80px;
+  position: relative; overflow: hidden;
+}
+.hero::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(59,130,246,.12), transparent 70%);
+  pointer-events: none;
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  border: 1px solid var(--border); border-radius: 99px;
+  padding: 4px 14px; font-size: .78rem; font-family: var(--mono);
+  color: var(--t1); margin-bottom: 28px;
+}
+.hero-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+h1 {
+  font-family: var(--display); font-size: clamp(3rem, 8vw, 6rem);
+  font-weight: 800; line-height: 1.0; letter-spacing: -.03em;
+  margin-bottom: 28px; max-width: 980px; margin-inline: auto;
+}
+h1 .arrow { color: var(--accent); }
+h1 .ps { color: var(--green); }
+
+.hero-sub {
+  font-size: 1.2rem; color: var(--t1); max-width: 600px; margin: 0 auto 52px;
+  line-height: 1.75; font-weight: 400;
+}
+
+.hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 60px; }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff; border: none; padding: 14px 32px; border-radius: 8px;
+  font-family: var(--body); font-size: 1rem; font-weight: 600; cursor: pointer;
+  transition: transform .2s, box-shadow .2s;
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(59,130,246,.3); }
+
+.btn-secondary {
+  background: transparent; color: var(--t0);
+  border: 1px solid var(--border); padding: 14px 32px; border-radius: 8px;
+  font-family: var(--body); font-size: 1rem; cursor: pointer; transition: border-color .2s;
+}
+.btn-secondary:hover { border-color: var(--t1); }
+
+/* Stats bar */
+.stats-bar {
+  display: flex; gap: 48px; justify-content: center; flex-wrap: wrap;
+  padding-top: 48px; border-top: 1px solid var(--border);
+}
+.stat-item { text-align: center; }
+.stat-num { font-family: var(--display); font-size: 2rem; font-weight: 800; color: var(--t0); line-height: 1; }
+.stat-lbl { font-size: .78rem; color: var(--t2); margin-top: 4px; font-family: var(--mono); }
+
+/* ── COMO FUNCIONA ── */
+.section { padding: 100px 24px; max-width: 1100px; margin: 0 auto; }
+.section-tag { font-family: var(--mono); font-size: .75rem; color: var(--accent); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 12px; }
+.section h2 { font-family: var(--display); font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 800; letter-spacing: -.03em; margin-bottom: 16px; }
+.section-sub { color: var(--t1); font-size: 1rem; line-height: 1.7; max-width: 520px; }
+
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-top: 60px; }
+.step-card {
+  background: var(--bg1); border: 1px solid var(--border); border-radius: 12px;
+  padding: 28px; position: relative; transition: border-color .2s;
+}
+.step-card:hover { border-color: var(--accent); }
+.step-num {
+  font-family: var(--display); font-size: 3rem; font-weight: 800;
+  color: var(--border); line-height: 1; margin-bottom: 16px;
+}
+.step-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 8px; }
+.step-card p { font-size: .88rem; color: var(--t1); line-height: 1.6; }
+
+/* ── PREÇOS ── */
+.pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-top: 60px; }
+.price-card {
+  background: var(--bg1); border: 1px solid var(--border); border-radius: 16px;
+  padding: 36px; transition: transform .2s;
+}
+.price-card:hover { transform: translateY(-4px); }
+.price-card.featured {
+  border-color: var(--accent); background: linear-gradient(135deg, #0e1a35, #0e1219);
+  position: relative;
+}
+.price-card.featured::before {
+  content: 'Mais popular'; position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+  background: var(--accent); color: #fff; font-size: .72rem; font-weight: 700;
+  padding: 3px 14px; border-radius: 99px; font-family: var(--mono);
+}
+.price-name { font-size: .82rem; color: var(--t2); font-family: var(--mono); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px; }
+.price-val { font-family: var(--display); font-size: 3rem; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+.price-val sup { font-size: 1.2rem; vertical-align: super; }
+.price-sub { font-size: .82rem; color: var(--t2); margin-bottom: 28px; }
+.price-features { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
+.price-features li { font-size: .88rem; color: var(--t1); display: flex; align-items: center; gap: 8px; }
+.price-features li::before { content: '✓'; color: var(--green); font-weight: 700; }
+.btn-price {
+  width: 100%; padding: 12px; border-radius: 8px; font-family: var(--body);
+  font-size: .95rem; font-weight: 600; cursor: pointer; transition: opacity .2s;
+  border: 1px solid var(--border); background: var(--bg2); color: var(--t0);
+}
+.price-card.featured .btn-price { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-price:hover { opacity: .8; }
+
+/* ── MODAL / WIZARD ── */
+.overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.85); backdrop-filter: blur(4px);
+  z-index: 200; display: flex; align-items: center; justify-content: center;
+  padding: 24px; opacity: 0; pointer-events: none; transition: opacity .25s;
+}
+.overlay.open { opacity: 1; pointer-events: all; }
+
+.modal {
+  background: var(--bg1); border: 1px solid var(--border); border-radius: 16px;
+  width: 100%; max-width: 680px; max-height: 90vh; overflow-y: auto;
+  transform: translateY(20px); transition: transform .25s;
+}
+.overlay.open .modal { transform: translateY(0); }
+
+.modal-header {
+  padding: 28px 32px 0; display: flex; align-items: center; justify-content: space-between;
+}
+.modal-title { font-family: var(--display); font-size: 1.4rem; font-weight: 800; }
+.modal-close { background: none; border: none; color: var(--t2); font-size: 1.4rem; cursor: pointer; padding: 4px; }
+.modal-close:hover { color: var(--t0); }
+
+/* Wizard steps indicator */
+.wizard-steps {
+  display: flex; align-items: center; gap: 0; padding: 24px 32px 0;
+}
+.wz-step {
+  display: flex; align-items: center; gap: 8px; font-size: .78rem;
+  font-family: var(--mono); color: var(--t2); flex: 1;
+}
+.wz-step.active { color: var(--accent); }
+.wz-step.done   { color: var(--green); }
+.wz-dot {
+  width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--border);
+  display: flex; align-items: center; justify-content: center; font-size: .7rem; font-weight: 700;
+  flex-shrink: 0;
+}
+.wz-step.active .wz-dot { border-color: var(--accent); background: rgba(59,130,246,.15); color: var(--accent); }
+.wz-step.done   .wz-dot { border-color: var(--green);  background: rgba(34,211,165,.15); color: var(--green); }
+.wz-line { flex: 1; height: 1px; background: var(--border); margin: 0 8px; }
+
+/* Modal body */
+.modal-body { padding: 28px 32px 32px; }
+
+/* Slide panels */
+.slide { display: none; }
+.slide.active { display: block; }
+.slide-title { font-size: 1rem; font-weight: 600; margin-bottom: 6px; }
+.slide-sub { font-size: .85rem; color: var(--t1); margin-bottom: 24px; line-height: 1.6; }
+
+/* Form */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.form-row.full { grid-template-columns: 1fr; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+label { font-size: .78rem; color: var(--t1); font-family: var(--mono); }
+input[type=text], input[type=email], input[type=password], input[type=number] {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 6px;
+  color: var(--t0); font-family: var(--mono); font-size: .82rem;
+  padding: 9px 12px; outline: none; width: 100%; transition: border-color .15s;
+}
+input:focus { border-color: var(--accent); }
+
+/* Package selector */
+.pkg-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+.pkg-card {
+  border: 1.5px solid var(--border); border-radius: 10px; padding: 16px 12px;
+  cursor: pointer; transition: border-color .15s; text-align: center;
+}
+.pkg-card:hover { border-color: var(--t2); }
+.pkg-card.selected { border-color: var(--accent); background: rgba(59,130,246,.08); }
+.pkg-name { font-size: .78rem; font-family: var(--mono); color: var(--t2); margin-bottom: 6px; }
+.pkg-price { font-family: var(--display); font-size: 1.4rem; font-weight: 800; line-height: 1; }
+.pkg-products { font-size: .72rem; color: var(--t2); margin-top: 4px; }
+
+/* Install box */
+.install-box {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 20px;
+  margin-bottom: 20px;
+}
+.install-step { display: flex; gap: 14px; margin-bottom: 16px; align-items: flex-start; }
+.install-step:last-child { margin-bottom: 0; }
+.install-num {
+  width: 26px; height: 26px; border-radius: 50%; background: rgba(59,130,246,.15);
+  border: 1.5px solid var(--accent); color: var(--accent); font-size: .72rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;
+}
+.install-content { flex: 1; }
+.install-content strong { font-size: .88rem; display: block; margin-bottom: 4px; }
+.install-content p { font-size: .8rem; color: var(--t1); line-height: 1.5; }
+.code-box {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 6px;
+  padding: 8px 12px; font-family: var(--mono); font-size: .78rem; color: var(--green);
+  margin-top: 8px; word-break: break-all; display: flex; align-items: center; justify-content: space-between;
+}
+.copy-btn { background: none; border: none; color: var(--t2); font-size: .72rem; cursor: pointer; flex-shrink: 0; }
+.copy-btn:hover { color: var(--t0); }
+
+/* Progress in modal */
+.prog-bar-wrap { background: var(--bg3); border-radius: 99px; height: 8px; overflow: hidden; margin-bottom: 6px; }
+.prog-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--green)); border-radius: 99px; transition: width .5s ease; }
+.prog-labels { display: flex; justify-content: space-between; font-size: .75rem; color: var(--t2); font-family: var(--mono); margin-bottom: 20px; }
+
+.status-log {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: 12px; height: 180px; overflow-y: auto; font-family: var(--mono); font-size: .75rem;
+}
+.log-entry { padding: 2px 0; color: var(--t1); }
+.log-entry.ok { color: var(--green); }
+.log-entry.err { color: var(--red); }
+.log-entry.info { color: var(--accent); }
+
+/* Modal footer */
+.modal-footer {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 20px 32px; border-top: 1px solid var(--border);
+}
+.btn-modal-back { background: none; border: none; color: var(--t2); font-size: .88rem; cursor: pointer; }
+.btn-modal-back:hover { color: var(--t0); }
+.btn-modal-next {
+  background: var(--accent); color: #fff; border: none; padding: 10px 28px;
+  border-radius: 8px; font-family: var(--body); font-size: .9rem; font-weight: 600; cursor: pointer;
+  transition: opacity .2s;
+}
+.btn-modal-next:disabled { opacity: .4; cursor: not-allowed; }
+.btn-modal-next:not(:disabled):hover { opacity: .85; }
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid var(--border); padding: 40px 24px; text-align: center;
+  font-size: .82rem; color: var(--t2);
+}
+footer a { color: var(--t1); text-decoration: none; }
+
+/* Verify badge */
+.verify-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  border-radius: 6px; padding: 6px 12px; font-size: .78rem; font-family: var(--mono);
+  margin-top: 10px;
+}
+.verify-badge.pending { background: rgba(245,158,11,.1); border: 1px solid var(--amber); color: var(--amber); }
+.verify-badge.ok      { background: rgba(34,211,165,.1); border: 1px solid var(--green);  color: var(--green); }
+.verify-badge.err     { background: rgba(239,68,68,.1);  border: 1px solid var(--red);    color: var(--red); }
+.msg-error  { display:none; background:rgba(239,68,68,.12); border:1px solid var(--red); color:var(--red); padding:10px 16px; border-radius:8px; font-size:.85rem; margin:0 32px 0; }
+.msg-notice { display:none; background:rgba(59,130,246,.12); border:1px solid var(--accent); color:var(--accent); padding:10px 16px; border-radius:8px; font-size:.85rem; margin:0 32px 0; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">Migra<span>Shop</span></div>
+  <div class="nav-links">
+    <a href="#como-funciona">Como funciona</a>
+    <a href="#precos">Preços</a>
+    <a href="#faq">FAQ</a>
+  </div>
+  <button class="btn-nav" onclick="openWizard('pro')">Começar migração</button>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div>
+    <div class="hero-badge"><span class="dot"></span> Serviço disponível · Portugal & Brasil</div>
+    <h1>Migra o teu <span class="arrow">WooCommerce</span><br>para <span class="ps">PrestaShop</span> — sem perder nada</h1>
+    <p class="hero-sub">Produtos, categorias, atributos, variações, preços e imagens. Migração directa entre bases de dados, sem exports manuais.</p>
+    <div class="hero-cta">
+      <button class="btn-primary" onclick="openWizard('pro')">Migrar agora — a partir de 49€</button>
+      <button class="btn-secondary" onclick="document.getElementById('como-funciona').scrollIntoView({behavior:'smooth'})">Ver como funciona</button>
+    </div>
+    <div class="stats-bar">
+      <div class="stat-item"><div class="stat-num">5.900+</div><div class="stat-lbl">Produtos migrados</div></div>
+      <div class="stat-item"><div class="stat-num">100%</div><div class="stat-lbl">Sem exportação manual</div></div>
+      <div class="stat-item"><div class="stat-num">BD→BD</div><div class="stat-lbl">Acesso directo localhost</div></div>
+      <div class="stat-item"><div class="stat-num">v2.5</div><div class="stat-lbl">Motor battle-tested</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- COMO FUNCIONA -->
+<div id="como-funciona">
+<div class="section">
+  <p class="section-tag">Processo</p>
+  <h2>Simples como devia ser</h2>
+  <p class="section-sub">Sem ferramentas complicadas. Sem exportar CSVs. Sem perder dados. A migração corre directamente entre as duas bases de dados.</p>
+  <div class="steps">
+    <div class="step-card">
+      <div class="step-num">01</div>
+      <h3>Escolhes o plano</h3>
+      <p>Selecciona o número de produtos e paga online. Recebes um token único para a tua migração.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num">02</div>
+      <h3>Instalar o agent</h3>
+      <p>Carregas um único ficheiro PHP para a raiz do teu hosting via File Manager. Sem SSH, sem linha de comandos.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num">03</div>
+      <h3>Configurar as BDs</h3>
+      <p>Introduzes as credenciais das bases de dados WooCommerce e PrestaShop. A ligação é testada antes de começar.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num">04</div>
+      <h3>Migração autónoma</h3>
+      <p>O servidor processa tudo em background. Podes fechar o browser — a migração continua. Recebes email no final.</p>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- PREÇOS -->
+<div id="precos" style="background: var(--bg1); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+<div class="section">
+  <p class="section-tag">Preços</p>
+  <h2>Paga uma vez, migra já</h2>
+  <p class="section-sub">Sem subscripções. Sem limites de tempo. O preço depende do número de produtos.</p>
+  <div class="pricing-grid">
+    <div class="price-card">
+      <div class="price-name">Starter</div>
+      <div class="price-val"><sup>€</sup>29</div>
+      <div class="price-sub">até 500 produtos</div>
+      <ul class="price-features">
+        <li>Produtos + variações</li>
+        <li>Categorias e atributos</li>
+        <li>Preços e stocks</li>
+        <li>Suporte por email</li>
+      </ul>
+      <button class="btn-price" onclick="openWizard('starter')">Começar</button>
+    </div>
+    <div class="price-card featured">
+      <div class="price-name">Pro</div>
+      <div class="price-val"><sup>€</sup>49</div>
+      <div class="price-sub">até 5.000 produtos</div>
+      <ul class="price-features">
+        <li>Tudo do Starter</li>
+        <li>Importação de imagens</li>
+        <li>Pausa e retoma</li>
+        <li>Log em tempo real</li>
+        <li>Suporte prioritário</li>
+      </ul>
+      <button class="btn-price" onclick="openWizard('pro')">Começar</button>
+    </div>
+    <div class="price-card">
+      <div class="price-name">Enterprise</div>
+      <div class="price-val"><sup>€</sup>99</div>
+      <div class="price-sub">produtos ilimitados</div>
+      <ul class="price-features">
+        <li>Tudo do Pro</li>
+        <li>Catálogos ilimitados</li>
+        <li>Consolidação de produtos</li>
+        <li>Suporte dedicado</li>
+        <li>Acesso white-label</li>
+      </ul>
+      <button class="btn-price" onclick="openWizard('enterprise')">Começar</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- FAQ -->
+<div id="faq">
+<div class="section">
+  <p class="section-tag">Perguntas frequentes</p>
+  <h2>Tens dúvidas?</h2>
+  <div style="max-width:680px;margin-top:40px;display:flex;flex-direction:column;gap:16px">
+    <div style="border:1px solid var(--border);border-radius:10px;padding:20px">
+      <strong style="font-size:.95rem">Preciso de acesso SSH ao servidor?</strong>
+      <p style="color:var(--t1);font-size:.88rem;margin-top:8px;line-height:1.6">Não. Apenas fazes upload de um ficheiro PHP via File Manager do cPanel ou ISPmanager. Sem linha de comandos, sem configurações técnicas complexas.</p>
+    </div>
+    <div style="border:1px solid var(--border);border-radius:10px;padding:20px">
+      <strong style="font-size:.95rem">O WooCommerce e o PrestaShop têm de estar no mesmo servidor?</strong>
+      <p style="color:var(--t1);font-size:.88rem;margin-top:8px;line-height:1.6">Não. Podem estar em servidores diferentes. O agent instala-se em ambos e comunica com o nosso servidor de processamento via HTTPS.</p>
+    </div>
+    <div style="border:1px solid var(--border);border-radius:10px;padding:20px">
+      <strong style="font-size:.95rem">O que acontece se a migração falhar a meio?</strong>
+      <p style="color:var(--t1);font-size:.88rem;margin-top:8px;line-height:1.6">A migração guarda o estado a cada batch. Podes retomar exactamente onde parou sem repetir o que já foi migrado. Nenhum dado é perdido.</p>
+    </div>
+    <div style="border:1px solid var(--border);border-radius:10px;padding:20px">
+      <strong style="font-size:.95rem">As minhas credenciais ficam guardadas nos vossos servidores?</strong>
+      <p style="color:var(--t1);font-size:.88rem;margin-top:8px;line-height:1.6">As credenciais da base de dados nunca saem do teu servidor. O nosso servidor comunica com o agent via token — nunca vê as tuas passwords.</p>
+    </div>
+  </div>
+</div>
+</div>
+
+<footer>
+  <p>© 2025 MigraShop · <a href="#">Termos</a> · <a href="#">Privacidade</a> · <a href="mailto:suporte@migrashop.pt">suporte@migrashop.pt</a></p>
+</footer>
+
+<!-- WIZARD MODAL -->
+<div class="overlay" id="overlay" onclick="if(event.target===this)closeWizard()">
+<div class="modal">
+  <div class="modal-header">
+    <div class="modal-title" id="modal-title">Nova migração</div>
+    <button class="modal-close" onclick="closeWizard()">×</button>
+  </div>
+
+  <div id="msg-global" class="msg-error" style="display:none;margin:16px 32px 0"></div>
+  <!-- Step indicators -->
+  <div class="wizard-steps">
+    <div class="wz-step active" id="wz1">
+      <div class="wz-dot">1</div>Plano
+    </div>
+    <div class="wz-line"></div>
+    <div class="wz-step" id="wz2">
+      <div class="wz-dot">2</div>Configurar
+    </div>
+    <div class="wz-line"></div>
+    <div class="wz-step" id="wz3">
+      <div class="wz-dot">3</div>Instalar
+    </div>
+    <div class="wz-line"></div>
+    <div class="wz-step" id="wz4">
+      <div class="wz-dot">4</div>Migrar
+    </div>
+  </div>
+
+  <div class="modal-body">
+
+    <!-- SLIDE 1: Plano -->
+    <div class="slide active" id="slide-1">
+      <div class="slide-title">Escolhe o plano</div>
+      <div class="slide-sub">O preço depende do número de produtos. Podes ver quantos tens no painel WooCommerce.</div>
+      <div class="pkg-grid">
+        <div class="pkg-card" id="pkg-starter" onclick="selectPkg('starter')">
+          <div class="pkg-name">Starter</div>
+          <div class="pkg-price">€29</div>
+          <div class="pkg-products">até 500 produtos</div>
+        </div>
+        <div class="pkg-card selected" id="pkg-pro" onclick="selectPkg('pro')">
+          <div class="pkg-name">Pro</div>
+          <div class="pkg-price">€49</div>
+          <div class="pkg-products">até 5.000 produtos</div>
+        </div>
+        <div class="pkg-card" id="pkg-enterprise" onclick="selectPkg('enterprise')">
+          <div class="pkg-name">Enterprise</div>
+          <div class="pkg-price">€99</div>
+          <div class="pkg-products">ilimitados</div>
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label>O teu email (para receber confirmação)</label>
+          <input type="email" id="email" placeholder="email@exemplo.com">
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 2: Configurar BDs -->
+    <div class="slide" id="slide-2">
+      <div class="slide-title">Credenciais das bases de dados</div>
+      <div class="slide-sub">Introduz as credenciais de ligação. Podes encontrá-las no painel de hosting ou no wp-config.php.</div>
+
+      <p style="font-size:.78rem;font-family:var(--mono);color:var(--t2);margin-bottom:10px">● WOOCOMMERCE</p>
+      <div class="form-row">
+        <div class="form-group"><label>Host BD</label><input type="text" id="wc-host" value="127.0.0.1" placeholder="127.0.0.1"></div>
+        <div class="form-group"><label>Porta</label><input type="text" id="wc-port" value="3306" placeholder="3306"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Nome da BD</label><input type="text" id="wc-db" placeholder="wordpress"></div>
+        <div class="form-group"><label>Prefixo tabelas</label><input type="text" id="wc-prefix" value="wp_" placeholder="wp_"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Utilizador</label><input type="text" id="wc-user" placeholder="root" autocomplete="username"></div>
+        <div class="form-group"><label>Password</label><input type="password" id="wc-pass" placeholder="••••••••"></div>
+      </div>
+
+      <p style="font-size:.78rem;font-family:var(--mono);color:var(--t2);margin:18px 0 10px">● PRESTASHOP</p>
+      <div class="form-row">
+        <div class="form-group"><label>Host BD</label><input type="text" id="ps-host" value="127.0.0.1" placeholder="127.0.0.1"></div>
+        <div class="form-group"><label>Porta</label><input type="text" id="ps-port" value="3306" placeholder="3306"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Nome da BD</label><input type="text" id="ps-db" placeholder="prestashop"></div>
+        <div class="form-group"><label>Prefixo tabelas</label><input type="text" id="ps-prefix" value="ps_" placeholder="ps_"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Utilizador</label><input type="text" id="ps-user" placeholder="root" autocomplete="username"></div>
+        <div class="form-group"><label>Password</label><input type="password" id="ps-pass" placeholder="••••••••"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>URL do WooCommerce</label><input type="text" id="wc-url" placeholder="https://loja.pt"></div>
+        <div class="form-group"><label>URL do PrestaShop</label><input type="text" id="ps-url" placeholder="https://nova-loja.pt"></div>
+      </div>
+    </div>
+
+    <!-- SLIDE 3: Instalar agent -->
+    <div class="slide" id="slide-3">
+      <div class="slide-title">Instalar o agent no teu servidor</div>
+      <div class="slide-sub">Faz o upload de um ficheiro PHP para cada servidor via File Manager do cPanel. Não precisas de SSH.</div>
+
+      <div class="install-box">
+        <div class="install-step">
+          <div class="install-num">1</div>
+          <div class="install-content">
+            <strong>Download do agent WooCommerce</strong>
+            <p>Descarrega o ficheiro e faz upload para a raiz do teu WooCommerce (onde está o wp-config.php)</p>
+            <button onclick="downloadAgent('wc')" style="margin-top:10px;background:var(--accent);color:#fff;border:none;padding:7px 16px;border-radius:6px;font-size:.8rem;cursor:pointer;font-family:var(--body)">⬇ Download wc2ps-agent-wc.php</button>
+          </div>
+        </div>
+        <div class="install-step">
+          <div class="install-num">2</div>
+          <div class="install-content">
+            <strong>Verificar instalação WC</strong>
+            <p>Após o upload, clica para verificar se o agent está acessível</p>
+            <button onclick="verifyAgent('wc')" style="margin-top:10px;background:var(--bg2);color:var(--t0);border:1px solid var(--border);padding:7px 16px;border-radius:6px;font-size:.8rem;cursor:pointer;font-family:var(--body)">🔍 Verificar agent WC</button>
+            <div class="verify-badge pending" id="verify-wc">⏳ Aguarda verificação</div>
+          </div>
+        </div>
+        <div class="install-step">
+          <div class="install-num">3</div>
+          <div class="install-content">
+            <strong>Download do agent PrestaShop</strong>
+            <p>Repete o processo para o servidor do PrestaShop</p>
+            <button onclick="downloadAgent('ps')" style="margin-top:10px;background:var(--accent);color:#fff;border:none;padding:7px 16px;border-radius:6px;font-size:.8rem;cursor:pointer;font-family:var(--body)">⬇ Download wc2ps-agent-ps.php</button>
+          </div>
+        </div>
+        <div class="install-step">
+          <div class="install-num">4</div>
+          <div class="install-content">
+            <strong>Verificar instalação PS</strong>
+            <button onclick="verifyAgent('ps')" style="margin-top:10px;background:var(--bg2);color:var(--t0);border:1px solid var(--border);padding:7px 16px;border-radius:6px;font-size:.8rem;cursor:pointer;font-family:var(--body)">🔍 Verificar agent PS</button>
+            <div class="verify-badge pending" id="verify-ps">⏳ Aguarda verificação</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 4: Progresso -->
+    <div class="slide" id="slide-4">
+      <div class="slide-title">Migração em curso</div>
+      <div class="slide-sub">O servidor está a processar a tua migração em background. Podes fechar esta janela — receberás um email quando terminar.</div>
+
+      <div style="margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;font-size:.78rem;font-family:var(--mono);color:var(--t2);margin-bottom:6px">
+          <span>Categorias</span><span id="p-cats">100%</span>
+        </div>
+        <div class="prog-bar-wrap"><div class="prog-bar-fill" id="pb-cats" style="width:100%"></div></div>
+
+        <div style="display:flex;justify-content:space-between;font-size:.78rem;font-family:var(--mono);color:var(--t2);margin:10px 0 6px">
+          <span>Atributos</span><span id="p-attrs">100%</span>
+        </div>
+        <div class="prog-bar-wrap"><div class="prog-bar-fill" id="pb-attrs" style="width:100%"></div></div>
+
+        <div style="display:flex;justify-content:space-between;font-size:.78rem;font-family:var(--mono);color:var(--t2);margin:10px 0 6px">
+          <span>Produtos</span><span id="p-prods">57%</span>
+        </div>
+        <div class="prog-bar-wrap"><div class="prog-bar-fill" id="pb-prods" style="width:57%"></div></div>
+      </div>
+
+      <div style="display:flex;gap:20px;margin-bottom:16px;flex-wrap:wrap">
+        <div style="font-size:.82rem;font-family:var(--mono)"><span style="color:var(--t2)">Importados</span> <span style="color:var(--green);font-weight:600" id="stat-done">3.400</span></div>
+        <div style="font-size:.82rem;font-family:var(--mono)"><span style="color:var(--t2)">Total</span> <span style="color:var(--t0)" id="stat-total">5.905</span></div>
+        <div style="font-size:.82rem;font-family:var(--mono)"><span style="color:var(--t2)">Erros</span> <span style="color:var(--red)" id="stat-errs">0</span></div>
+        <div style="font-size:.82rem;font-family:var(--mono);margin-left:auto"><span style="color:var(--t2)">Step</span> <span style="color:var(--accent)" id="stat-step">products</span></div>
+      </div>
+
+      <div class="status-log" id="status-log">
+        <div class="log-entry ok">✓ Categorias migradas: 178</div>
+        <div class="log-entry ok">✓ Atributos migrados: 66</div>
+        <div class="log-entry info">↻ A migrar produtos... (batch 170/296)</div>
+        <div class="log-entry">  LUVAS KENNY TITANIUM - ORANGE → PS#3400</div>
+        <div class="log-entry">  LUVAS KENNY TITANIUM - NAVY → PS#3401</div>
+      </div>
+    </div>
+
+  </div><!-- /.modal-body -->
+
+  <div class="modal-footer">
+    <button class="btn-modal-back" id="btn-back" onclick="prevStep()" style="visibility:hidden">← Voltar</button>
+    <button class="btn-modal-next" id="btn-next" onclick="nextStep()">Continuar →</button>
+  </div>
+</div>
+</div>
+
+<script>
+// ── Config ─────────────────────────────────────────────────────────────────
+const API_BASE     = 'api.php';        // dashboard API
+const PAYMENT_BASE = 'payment.php';   // payment API
+
+// ── State ──────────────────────────────────────────────────────────────────
+const S = {
+  pkg:        'pro',
+  jobId:      null,
+  wcVerified: false,
+  psVerified: false,
+  pollTimer:  null,
+  logOffset:  0,
+};
+
+// ── Wizard navigation ──────────────────────────────────────────────────────
+function openWizard(pkg) {
+  selectPkg(pkg);
+  document.getElementById('overlay').classList.add('open');
+  goToStep(1);
+}
+
+function closeWizard() {
+  clearInterval(S.pollTimer);
+  document.getElementById('overlay').classList.remove('open');
+}
+
+function selectPkg(pkg) {
+  S.pkg = pkg;
+  document.querySelectorAll('.pkg-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('pkg-' + pkg)?.classList.add('selected');
+}
+
+function goToStep(n) {
+  document.querySelectorAll('.slide').forEach((s, i) => s.classList.toggle('active', i + 1 === n));
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('wz' + i);
+    if (!el) continue;
+    el.classList.remove('active', 'done');
+    if (i < n) el.classList.add('done');
+    if (i === n) el.classList.add('active');
+  }
+  const back = document.getElementById('btn-back');
+  const next = document.getElementById('btn-next');
+  back.style.visibility = n > 1 ? 'visible' : 'hidden';
+  if (n === 4) {
+    next.textContent = 'Fechar';
+    next.disabled = false;
+  } else if (n === 3) {
+    next.textContent = 'Iniciar migração →';
+    next.disabled = !(S.wcVerified && S.psVerified);
+  } else {
+    next.textContent = 'Continuar →';
+    next.disabled = false;
+  }
+}
+
+async function nextStep() {
+  const n = currentSlide();
+  if (n === 4) { closeWizard(); return; }
+
+  if (n === 1) {
+    // Validar email antes de avançar para pagamento PayPal
+    const email = document.getElementById('email').value.trim();
+    if (!email || !email.includes('@')) {
+      alert('Por favor introduz um email válido.'); return;
+    }
+    await handlePayment(email);
+    return;
+  }
+
+  if (n === 2) {
+    // Guardar credenciais e avançar para instalação do agent
+    saveCreds();
+    goToStep(3);
+    return;
+  }
+
+  if (n === 3) {
+    if (!S.wcVerified || !S.psVerified) {
+      alert('Verifica os dois agents antes de continuar.'); return;
+    }
+    // Enviar credenciais ao servidor e arrancar migração
+    await startMigration();
+    return;
+  }
+}
+
+function prevStep() {
+  const n = currentSlide();
+  if (n > 1) goToStep(n - 1);
+}
+
+function currentSlide() {
+  const slides = document.querySelectorAll('.slide');
+  for (let i = 0; i < slides.length; i++) {
+    if (slides[i].classList.contains('active')) return i + 1;
+  }
+  return 1;
+}
+
+// ── Pagamento PayPal ────────────────────────────────────────────────────────
+async function handlePayment(email) {
+  const btn = document.getElementById('btn-next');
+  btn.disabled = true;
+  btn.textContent = 'A processar...';
+
+  try {
+    const res = await api(PAYMENT_BASE, {
+      action: 'create_order',
+      plan:   S.pkg,
+      email:  email,
+      name:   email.split('@')[0],
+    });
+
+    if (res.data?.approval_url) {
+      // Guardar order_id em sessionStorage para capturar após redirect
+      sessionStorage.setItem('paypal_order_id', res.data.order_id);
+      sessionStorage.setItem('pending_email', email);
+      // Redirecionar para PayPal
+      window.location.href = res.data.approval_url;
+    } else {
+      throw new Error(res.message || 'Erro ao criar pagamento');
+    }
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = 'Continuar →';
+    showError('Erro no pagamento: ' + e.message);
+  }
+}
+
+// Capturar pagamento após retorno do PayPal
+async function capturePaymentIfPending() {
+  const params   = new URLSearchParams(window.location.search);
+  const payment  = params.get('payment');
+  const orderId  = params.get('order_id') || sessionStorage.getItem('paypal_order_id');
+
+  if (payment === 'cancelled') {
+    showError('Pagamento cancelado. Podes tentar novamente.');
+    return;
+  }
+
+  if (payment === 'approve' && orderId) {
+    sessionStorage.removeItem('paypal_order_id');
+    // Limpar URL
+    window.history.replaceState({}, '', window.location.pathname);
+
+    showNotice('A confirmar pagamento...');
+
+    try {
+      const res = await api(PAYMENT_BASE, { action: 'capture', order_id: orderId });
+      S.jobId          = res.data.job_id;
+      S.wcAgentFile    = res.data.wc_agent_file;
+      S.psAgentFile    = res.data.ps_agent_file;
+      S.wcAgentToken   = res.data.wc_agent_token;
+      S.psAgentToken   = res.data.ps_agent_token;
+
+      sessionStorage.setItem('job_id', S.jobId);
+
+      // Abrir wizard no passo 2 (credenciais)
+      openWizard(res.data.plan || 'pro');
+      goToStep(2);
+      showNotice('Pagamento confirmado! Preenche as credenciais das bases de dados.');
+    } catch (e) {
+      showError('Erro ao confirmar pagamento: ' + e.message);
+    }
+  }
+
+  // Retomar job existente
+  const savedJobId = sessionStorage.getItem('job_id');
+  if (savedJobId && !S.jobId) {
+    S.jobId = parseInt(savedJobId);
+  }
+}
+
+// ── Credenciais ─────────────────────────────────────────────────────────────
+function saveCreds() {
+  // Guardar em memória — serão enviadas ao servidor no startMigration
+  S.creds = {
+    wc_host:   document.getElementById('wc-host').value   || '127.0.0.1',
+    wc_port:   document.getElementById('wc-port').value   || '3306',
+    wc_db:     document.getElementById('wc-db').value,
+    wc_prefix: document.getElementById('wc-prefix').value || 'wp_',
+    wc_user:   document.getElementById('wc-user').value,
+    wc_pass:   document.getElementById('wc-pass').value,
+    wc_url:    document.getElementById('wc-url').value,
+    ps_host:   document.getElementById('ps-host').value   || '127.0.0.1',
+    ps_port:   document.getElementById('ps-port').value   || '3306',
+    ps_db:     document.getElementById('ps-db').value,
+    ps_prefix: document.getElementById('ps-prefix').value || 'ps_',
+    ps_user:   document.getElementById('ps-user').value,
+    ps_pass:   document.getElementById('ps-pass').value,
+    ps_url:    document.getElementById('ps-url').value,
+  };
+}
+
+// ── Agent: download e verificação ───────────────────────────────────────────
+function downloadAgent(type) {
+  if (!S.jobId) { showError('Pagamento não confirmado ainda.'); return; }
+  const url = type === 'wc' ? S.wcAgentFile : S.psAgentFile;
+  if (!url) { showError('URL do agent não disponível.'); return; }
+  window.open(url, '_blank');
+}
+
+async function verifyAgent(type) {
+  if (!S.jobId) { showError('Pagamento não confirmado ainda.'); return; }
+  const el = document.getElementById('verify-' + type);
+  el.className = 'verify-badge pending';
+  el.textContent = '⏳ A verificar...';
+
+  try {
+    const res = await api(API_BASE, {
+      action:  'verify_agent',
+      job_id:  S.jobId,
+      type:    type,
+    });
+
+    const info = res.data?.db_info || {};
+    const count = info.products_published ?? info.products_count ?? '?';
+    const label = type === 'wc'
+      ? `✓ WooCommerce OK — ${count} produtos`
+      : `✓ PrestaShop OK`;
+
+    el.className = 'verify-badge ok';
+    el.textContent = label;
+
+    if (type === 'wc') S.wcVerified = true;
+    if (type === 'ps') S.psVerified = true;
+
+    // Desbloquear botão de avançar se ambos verificados
+    if (S.wcVerified && S.psVerified) {
+      document.getElementById('btn-next').disabled = false;
+    }
+  } catch (e) {
+    el.className = 'verify-badge err';
+    el.textContent = '✗ Falhou: ' + e.message;
+  }
+}
+
+// ── Iniciar migração ────────────────────────────────────────────────────────
+async function startMigration() {
+  if (!S.jobId) { showError('Job não encontrado.'); return; }
+  const btn = document.getElementById('btn-next');
+  btn.disabled = true;
+  btn.textContent = 'A iniciar...';
+
+  try {
+    // Enviar credenciais ao servidor para actualizar o job
+    await api(API_BASE, {
+      action:    'update_job_creds',
+      job_id:    S.jobId,
+      wc_db_host:   S.creds.wc_host,
+      wc_db_port:   S.creds.wc_port,
+      wc_db_name:   S.creds.wc_db,
+      wc_db_user:   S.creds.wc_user,
+      wc_db_pass:   S.creds.wc_pass,
+      wc_db_prefix: S.creds.wc_prefix,
+      wc_agent_url: S.creds.wc_url + '/wc2ps-agent.php',
+      ps_db_host:   S.creds.ps_host,
+      ps_db_port:   S.creds.ps_port,
+      ps_db_name:   S.creds.ps_db,
+      ps_db_user:   S.creds.ps_user,
+      ps_db_pass:   S.creds.ps_pass,
+      ps_db_prefix: S.creds.ps_prefix,
+      ps_agent_url: S.creds.ps_url + '/wc2ps-agent.php',
+    });
+
+    // Activar job (muda status para 'pending' para o worker pegar)
+    await api(API_BASE, { action: 'activate_job', job_id: S.jobId });
+
+    goToStep(4);
+    startPolling();
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = 'Iniciar migração →';
+    showError('Erro ao iniciar: ' + e.message);
+  }
+}
+
+// ── Polling de progresso ────────────────────────────────────────────────────
+function startPolling() {
+  S.logOffset = 0;
+  pollProgress();
+  S.pollTimer = setInterval(pollProgress, 2000);
+}
+
+async function pollProgress() {
+  if (!S.jobId) return;
+  try {
+    const res = await api(API_BASE, { action: 'get_job', job_id: S.jobId });
+    const job = res.data || {};
+    updateProgressUI(job);
+
+    if (job.status === 'completed' || job.status === 'error') {
+      clearInterval(S.pollTimer);
+    }
+
+    // Buscar logs novos
+    await pollLogs();
+  } catch (e) {
+    console.warn('Poll error:', e.message);
+  }
+}
+
+async function pollLogs() {
+  const res = await api(API_BASE, {
+    action: 'get_logs',
+    job_id: S.jobId,
+    offset: S.logOffset,
+  });
+  const logs = res.data?.logs || [];
+  S.logOffset = res.data?.next_offset ?? S.logOffset;
+  logs.forEach(appendLog);
+}
+
+function updateProgressUI(job) {
+  const total  = job.total_products  || 0;
+  const done   = job.done_products   || 0;
+  const cats   = job.total_categories || 0;
+  const catsDone = job.done_categories || 0;
+  const attrs  = job.total_attrs     || 0;
+  const attrsDone = job.done_attrs   || 0;
+
+  const pctProd = total > 0 ? Math.round((done / total) * 100) : 0;
+  const pctCats = cats  > 0 ? Math.round((catsDone / cats) * 100) : (catsDone > 0 ? 100 : 0);
+  const pctAttr = attrs > 0 ? Math.round((attrsDone / attrs) * 100) : (attrsDone > 0 ? 100 : 0);
+
+  document.getElementById('pb-cats').style.width  = pctCats + '%';
+  document.getElementById('p-cats').textContent   = pctCats + '%';
+  document.getElementById('pb-attrs').style.width = pctAttr + '%';
+  document.getElementById('p-attrs').textContent  = pctAttr + '%';
+  document.getElementById('pb-prods').style.width = pctProd + '%';
+  document.getElementById('p-prods').textContent  = pctProd + '%';
+
+  document.getElementById('stat-done').textContent  = done.toLocaleString('pt');
+  document.getElementById('stat-total').textContent = total.toLocaleString('pt');
+  document.getElementById('stat-errs').textContent  = job.errors ?? 0;
+  document.getElementById('stat-step').textContent  = job.status === 'completed' ? 'concluído' : (job.step || job.status || '—');
+
+  if (job.status === 'completed') {
+    document.getElementById('btn-next').textContent = 'Fechar ✓';
+    document.getElementById('btn-next').disabled    = false;
+  }
+}
+
+function appendLog(entry) {
+  const log = document.getElementById('status-log');
+  const div = document.createElement('div');
+  const levelClass = {
+    success: 'ok', error: 'err', warning: 'err', info: 'info'
+  }[entry.level] || '';
+  div.className   = 'log-entry ' + levelClass;
+  div.textContent = `${entry.ts || ''} [${entry.step || ''}] ${entry.message}`;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+// ── Utilidades ──────────────────────────────────────────────────────────────
+async function api(endpoint, body) {
+  const res = await fetch(endpoint, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.message || 'Erro desconhecido');
+  return data;
+}
+
+function showError(msg) {
+  const el = document.getElementById('msg-global');
+  if (el) { el.textContent = msg; el.style.display = 'block'; el.className = 'msg-error'; }
+  else alert(msg);
+}
+
+function showNotice(msg) {
+  const el = document.getElementById('msg-global');
+  if (el) { el.textContent = msg; el.style.display = 'block'; el.className = 'msg-notice'; }
+}
+
+// ── Init ────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', capturePaymentIfPending);
+</script>
+</body>
+</html>
