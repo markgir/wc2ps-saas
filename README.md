@@ -1,1 +1,1 @@
-# woocmmerce-to-prestashop
+# woocomerce-to-prestashop
